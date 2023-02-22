@@ -12,4 +12,5 @@ var courseSch=new mongoose.Schema({
         type: String
     }
 });
-mongoose.model("Course",courseSch);
+ const Course=mongoose.model("Course",courseSch);
+ module.exports = Course;
