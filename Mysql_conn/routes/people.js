@@ -9,11 +9,11 @@ Router.get("/create",(req,res)=>{
     mysqlConnection.query(sql,(err,rows,fields)=>{
         if(!err)
         {
-            //res.send(rows);
-            console.log('db is created check once');
+            res.send('db is created check once');
         }
         else
         {
+            res.send(err);
             console.log(err);
         }
     })
@@ -31,6 +31,7 @@ Router.get("/",(req,res)=>{
         }
         else
         {
+            res.send(err);
             console.log(err);
         }
     })
@@ -39,16 +40,21 @@ Router.get("/",(req,res)=>{
 
 // Insert the data into existing database
 
-Router.get("/make",(req,res)=>{
-    var sql = "INSERT INTO `Edureka`.`people` (`name`, `age`) VALUES ('mon', '14')";
+Router.post("/make",(req,res)=>{
+    var f_name = req.body.name;
+    var f_age = req.body.age;
+    // console.log(f_name);
+    // console.log(f_age);
+    var sql = "INSERT INTO `Edureka`.`people` (`name`, `age`) VALUES ('" + f_name + "','"+f_age+"')";
     mysqlConnection.query(sql,(err,rows,fields)=>{
         if(!err)
         {
-            //res.send(rows);
+            res.send(rows);
             console.log('db is created check once');
         }
         else
         {
+            res.send(err);
             console.log(err);
         }
     })
@@ -56,12 +62,15 @@ Router.get("/make",(req,res)=>{
 })
 
 // Delete the data from existing database Table
-Router.get("/del",(req,res)=>{
-    var sql = "DELETE FROM people WHERE name = 'mon'";
+Router.delete("/del/(:id)",(req,res)=>{
+    var user = { id: req.params.id }
+    //console.log(user);
+    var sql = "DELETE FROM people WHERE name = '"+ req.params.id +"'";
     mysqlConnection.query(sql,(err,rows,fields)=>{
         if(!err)
         {
             //res.send(rows);
+            res.send("deletion success");
             console.log('db is created check once');
         }
         else
@@ -89,8 +98,22 @@ Router.get("/update",(req,res)=>{
     })
 
 })
+// Create database
 
+Router.get("/db",(req,res)=>{
+    mysqlConnection.query("CREATE DATABASE mydb",(err,rows,fields)=>{
+        if(!err)
+        {
+            res.send(rows);
+            //console.log(fields);
+        }
+        else
+        {
+            console.log(err);
+        }
+    })
 
+})
 
 
 

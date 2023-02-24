@@ -24,4 +24,4 @@ app.use("/people",PeopleRoutes);
 //     console.log('Connected to the MySQL server.');
 //   });
   
-app.listen(3000);
+app.listen(4000);
