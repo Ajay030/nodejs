@@ -25,7 +25,7 @@ Router.get("/create",(req,res)=>{
 Router.get("/",(req,res)=>{
     mysqlConnection.query("SELECT * from people",(err,rows,fields)=>{
         if(!err)
-        {
+        { 
             res.send(rows);
             //console.log(fields);
         }
@@ -40,7 +40,7 @@ Router.get("/",(req,res)=>{
 
 // Insert the data into existing database
 
-Router.post("/make",(req,res)=>{
+Router.post("/",(req,res)=>{
     var f_name = req.body.name;
     var f_age = req.body.age;
     // console.log(f_name);
@@ -62,7 +62,7 @@ Router.post("/make",(req,res)=>{
 })
 
 // Delete the data from existing database Table
-Router.delete("/del/(:id)",(req,res)=>{
+Router.delete("/(:id)",(req,res)=>{
     var user = { id: req.params.id }
     //console.log(user);
     var sql = "DELETE FROM people WHERE name = '"+ req.params.id +"'";
@@ -83,16 +83,19 @@ Router.delete("/del/(:id)",(req,res)=>{
 
 //Update the existing table data 
 
-Router.get("/update",(req,res)=>{
-    var sql = "UPDATE `Edureka`.`people` SET `name` = 'ram' WHERE (`name` = 'jonty');";
+Router.put("/",(req,res)=>{
+    var name1 = req.body.name1;
+    var name2 = req.body.name2;
+    var sql = "UPDATE `Edureka`.`people` SET `name` = '"+name2+"' WHERE (`name` = '"+name1+"');";
     mysqlConnection.query(sql,(err,rows,fields)=>{
         if(!err)
         {
-            //res.send(rows);
+            res.send("updated");
             console.log('db is created check once');
         }
         else
         {
+            res.send(err);
             console.log(err);
         }
     })
