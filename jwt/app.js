@@ -2,8 +2,15 @@ require("dotenv").config();
 require("./config/database").connect();
 const express = require("express");
 const auth = require("./middleware/auth");
+const bodyParser = require('body-parser')
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
+
+app.use(bodyParser.urlencoded({
+  extended:true
+}))
 
 app.use(express.json());
 
@@ -17,6 +24,7 @@ app.post("/register", async (req, res) => {
     // Our register logic starts here
     try {
       // Get user input
+      console.log(req.body);
       const { first_name, last_name, email, password } = req.body;
   
       // Validate user input
