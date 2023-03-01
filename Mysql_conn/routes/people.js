@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const Router = express.Router();
 const mysqlConnection = require('../connection');
@@ -47,7 +48,7 @@ Router.post("/register", async (req, res) => {
         // Create token
         const token = jwt.sign(
             { first_name, address,email},
-            "ajaybhatheja",
+            process.env.TOKEN_KEY,
             {
                 expiresIn: "2h",
             }

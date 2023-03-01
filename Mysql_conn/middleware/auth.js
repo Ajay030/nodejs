@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-
+require("dotenv").config();
 const config = process.env;
 
 const verifyToken = (req, res, next) => {
@@ -9,7 +9,7 @@ const verifyToken = (req, res, next) => {
     return res.status(403).send("A token is required for authentication");
   }
   try {
-    const decoded = jwt.verify(token, "ajaybhatheja");
+    const decoded = jwt.verify(token,  process.env.TOKEN_KEY);
     console.log(decoded);
    // req.user = decoded;
   } catch (err) {
