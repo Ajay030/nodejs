@@ -14,5 +14,16 @@ mysqlConnection.connect(function(err) {
   
     console.log('Connected to the MySQL server.');
   });
-  
+
+
+ getUserByEmail = (email) =>{
+    return new Promise((resolve, reject)=>{
+        pool.query('SELECT * FROM customers WHERE email = ?', [email], (error, users)=>{
+            if(error){
+                return reject(error);
+            }
+            return resolve(users[0]);
+        });
+    });
+};
 module.exports = mysqlConnection;

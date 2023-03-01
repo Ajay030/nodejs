@@ -3,7 +3,8 @@ const Router = express.Router();
 const mysqlConnection = require('../connection');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const auth = require("../middleware/auth")
+const auth = require("../middleware/auth");
+const verifyToken = require("../middleware/auth");
 
 //registeration
 Router.post("/register", async (req, res) => {
@@ -21,7 +22,13 @@ Router.post("/register", async (req, res) => {
         if (!(email && password && first_name && address)) {
             res.status(400).send("All input is required");
         }
-
+         //check email is present or not
+         if (email != null) {
+            mysqlConnection.query('INSERT INTO customers (email) VALUES (?)', [email], function (err, result) {
+                if (err) return res.status(409).send("User Already Exist. Please Login");
+                console.log('1 record inserted')
+            })
+        }
         encryptedPassword = await bcrypt.hash(password, 10);
 
         var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
@@ -35,17 +42,11 @@ Router.post("/register", async (req, res) => {
             }
         })
 
-        //check email is present or not
-        // if (email != null) {
-        //     mysqlConnection.query('INSERT IuserNTO customers (email) VALUES (?)', [email], function (err, result) {
-        //         if (err) return res.status(409).send("User Already Exist. Please Login");
-        //         console.log('1 record inserted')
-        //     })
-        // }
+       
 
         // Create token
         const token = jwt.sign(
-            { first_name, address },
+            { first_name, address,email},
             "ajaybhatheja",
             {
                 expiresIn: "2h",
@@ -72,7 +73,9 @@ Router.post("/login", async (req, res) => {
             res.status(400).send("All input is required");
         }
 
-        user = mysqlConnection.getcustomersByEmail(email);
+        
+        const user = mysqlConnection.getUserByEmail(email);
+        
 
         if(!user){
             return res.json({
@@ -125,10 +128,13 @@ Router.post("/insert", auth, (req, res) => {
 })
 
 // Delete the data from existing database Table// Delete the data from existing database Table
-Router.delete("/(:id)", auth, (req, res) => {
+Router.delete("/", auth, (req, res) => {
     //var user = { id: req.params.id }
     //console.log(user);
-    var sql = "DELETE FROM customers WHERE name = '" + req.params.id + "'";
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, "ajaybhatheja");
+    console.log(decoded.first_name);
+    var sql = "DELETE FROM customers WHERE name = '" + decoded.first_name + "'";
     mysqlConnection.query(sql, (err, rows, fields) => {
         if (!err) {
             //res.send(rows);
@@ -145,13 +151,15 @@ Router.delete("/(:id)", auth, (req, res) => {
 //Update the existing table data 
 
 Router.put("/", auth, (req, res) => {
-    var name1 = req.body.name1;
-    var name2 = req.body.name2;
-    var sql = "UPDATE `customers` SET `name` = '" + name2 + "' WHERE (`name` = '" + name1 + "');";
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, "ajaybhatheja");
+    console.log(decoded.first_name);
+    //var name2 = req.body.name;
+    var sql = "UPDATE `customers` SET `name` = '" + req.body.name + "' WHERE (`name` = '" + decoded.first_name + "');";
     mysqlConnection.query(sql, (err, rows, fields) => {
         if (!err) {
             res.send("updated");
-            console.log('db is created check once');
+            console.log('db is updated');
         }
         else {
             res.send(err);
@@ -179,8 +187,8 @@ Router.get("/create", auth, (req, res) => {
 
 //Read the data from the data 
 
-Router.get("/", (req, res) => {
-    mysqlConnection.query("SELECT * from people", (err, rows, fields) => {
+Router.get("/",auth,(req, res) => {
+    mysqlConnection.query("SELECT * from customers", (err, rows, fields) => {
         if (!err) {
             res.send(rows);
             //console.log(fields);
@@ -194,24 +202,6 @@ Router.get("/", (req, res) => {
 })
 
 
-
-
-
-
-// Create database
-
-Router.get("/db", (req, res) => {
-    mysqlConnection.query("CREATE DATABASE mydb", (err, rows, fields) => {
-        if (!err) {
-            res.send(rows);
-            //console.log(fields);
-        }
-        else {
-            console.log(err);
-        }
-    })
-
-})
 
 
 
