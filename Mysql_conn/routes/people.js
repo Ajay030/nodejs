@@ -5,7 +5,6 @@ const mysqlConnection = require('../connection');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
-const verifyToken = require("../middleware/auth");
 
 //registeration
 Router.post("/register", async (req, res) => {
@@ -23,38 +22,36 @@ Router.post("/register", async (req, res) => {
         if (!(email && password && first_name && address)) {
             res.status(400).send("All input is required");
         }
-         //check email is present or not
-         if (email != null) {
-            mysqlConnection.query('INSERT INTO customers (email) VALUES (?)', [email], function (err, result) {
-                if (err) return res.status(409).send("User Already Exist. Please Login");
-                console.log('1 record inserted')
-            })
-        }
+        mysqlConnection.query(`SELECT * from customers WHERE email = ${mysqlConnection.escape(email)}`, (err, result) => {
+            console.log(result);
+            if (err) {
+                throw err;
+            } else if (result.length >= 1) {
+                res.status(400).send("User Already Exists")
+            }
+        })
+
         encryptedPassword = await bcrypt.hash(password, 10);
 
-        var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
+        var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + encryptedPassword + "')";
         mysqlConnection.query(sql, (err, rows, fields) => {
             if (!err) {
                 //res.send(rows);
                 console.log(' registeration is successful check once');
+                // Create token
+                const token = jwt.sign(
+                    { user_id: email },
+                    process.env.TOKEN_KEY,
+                    {
+                        expiresIn: "2h",
+                    }
+                );
+                res.status(201).json(token);
             }
             else {
                 res.send(err);
             }
         })
-
-       
-
-        // Create token
-        const token = jwt.sign(
-            { first_name, address,email},
-            process.env.TOKEN_KEY,
-            {
-                expiresIn: "2h",
-            }
-        );
-
-        res.status(201).json(token);
     } catch (err) {
         console.log(err);
     }
@@ -68,38 +65,32 @@ Router.post("/login", async (req, res) => {
         // Get user input
         var email = req.body.email;
         var password1 = req.body.password;
-
         // Validate user input
         if (!(email && password1)) {
             res.status(400).send("All input is required");
         }
-
-        
-        const user = mysqlConnection.getUserByEmail(email);
-        
-
-        if(!user){
-            return res.json({
-                message: "Invalid email or password"
-            })
-        }
-     
-        const isValidPassword = compareSync(password1, user.password);
-
-        if (isValidPassword) {
-            // Create token
-            const token = jwt.sign(
-                { user_id: user._id, email },
-                process.env.TOKEN_KEY,
-                {
-                    expiresIn: "2h",
+        mysqlConnection.query(`SELECT password from customers WHERE email = ${mysqlConnection.escape(email)}`, (err, result) => {
+            if (err) {
+                throw err;
+            } else if (result.length ==0) {
+                res.json("User does not exists!")
+            }else{
+                const isValidPassword = bcrypt.compareSync(password1,result[0].password);
+                if (isValidPassword) {
+                    const token = jwt.sign(
+                        { user_id: email },
+                        process.env.TOKEN_KEY,
+                        {
+                            expiresIn: "2h",
+                        }
+                    );
+                    // user
+                    res.status(200).json(token);
+                }else{
+                    res.json('Invalid Credentails')
                 }
-            );
-
-            // user
-            res.status(200).json(token);
-        }
-        res.status(400).send("Invalid Credentials");
+            }
+        })
     } catch (err) {
         console.log(err);
     }
@@ -109,33 +100,33 @@ Router.post("/login", async (req, res) => {
 
 // Insert the data into existing database
 
-Router.post("/insert", auth, (req, res) => {
-    var first_name = req.body.name;
-    var address = req.body.address;
-    var email = req.body.email;
-    var password = req.body.password;
-    var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
-    mysqlConnection.query(sql, (err, rows, fields) => {
-        if (!err) {
-            res.send(rows);
-            console.log('db is created check once');
-        }
-        else {
-            res.send(err);
-            console.log(err);
-        }
-    })
+// Router.post("/insert", auth, (req, res) => {
+//     var first_name = req.body.name;
+//     var address = req.body.address;
+//     var email = req.body.email;
+//     var password = req.body.password;
+//     var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
+//     mysqlConnection.query(sql, (err, rows, fields) => {
+//         if (!err) {
+//             res.send(rows);
+//             console.log('db is created check once');
+//         }
+//         else {
+//             res.send(err);
+//             console.log(err);
+//         }
+//     })
 
-})
+// })
 
 // Delete the data from existing database Table// Delete the data from existing database Table
 Router.delete("/", auth, (req, res) => {
     //var user = { id: req.params.id }
     //console.log(user);
     const token = req.headers["x-access-token"];
-    const decoded = jwt.verify(token, "ajaybhatheja");
-    console.log(decoded.first_name);
-    var sql = "DELETE FROM customers WHERE name = '" + decoded.first_name + "'";
+    const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+    console.log(decoded.user_id);
+    var sql = "DELETE FROM customers WHERE email = '" + decoded.user_id + "'";
     mysqlConnection.query(sql, (err, rows, fields) => {
         if (!err) {
             //res.send(rows);
@@ -153,10 +144,10 @@ Router.delete("/", auth, (req, res) => {
 
 Router.put("/", auth, (req, res) => {
     const token = req.headers["x-access-token"];
-    const decoded = jwt.verify(token, "ajaybhatheja");
-    console.log(decoded.first_name);
+    const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+    console.log(decoded.user_id);
     //var name2 = req.body.name;
-    var sql = "UPDATE `customers` SET `name` = '" + req.body.name + "' WHERE (`name` = '" + decoded.first_name + "');";
+    var sql = "UPDATE `customers` SET `email` = '" + req.body.email + "' WHERE (`email` = '" + decoded.user_id + "');";
     mysqlConnection.query(sql, (err, rows, fields) => {
         if (!err) {
             res.send("updated");
@@ -188,7 +179,7 @@ Router.get("/create", auth, (req, res) => {
 
 //Read the data from the data 
 
-Router.get("/",auth,(req, res) => {
+Router.get("/", auth, (req, res) => {
     mysqlConnection.query("SELECT * from customers", (err, rows, fields) => {
         if (!err) {
             res.send(rows);
