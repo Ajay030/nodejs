@@ -98,26 +98,26 @@ Router.post("/login", async (req, res) => {
 });
 
 
-// Insert the data into existing database
+//Insert the data into existing database
 
-// Router.post("/insert", auth, (req, res) => {
-//     var first_name = req.body.name;
-//     var address = req.body.address;
-//     var email = req.body.email;
-//     var password = req.body.password;
-//     var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
-//     mysqlConnection.query(sql, (err, rows, fields) => {
-//         if (!err) {
-//             res.send(rows);
-//             console.log('db is created check once');
-//         }
-//         else {
-//             res.send(err);
-//             console.log(err);
-//         }
-//     })
+Router.post("/insert", auth, (req, res) => {
+    var first_name = req.body.name;
+    var address = req.body.address;
+    var email = req.body.email;
+    var password = req.body.password;
+    var sql = "INSERT INTO `customers` (`name`, `address`,`email`,`password`) VALUES ('" + first_name + "','" + address + "','" + email + "','" + password + "')";
+    mysqlConnection.query(sql, (err, rows, fields) => {
+        if (!err) {
+            res.send(rows);
+            console.log('db is created check once');
+        }
+        else {
+            res.send(err);
+            console.log(err);
+        }
+    })
 
-// })
+})
 
 // Delete the data from existing database Table// Delete the data from existing database Table
 Router.delete("/", auth, (req, res) => {
