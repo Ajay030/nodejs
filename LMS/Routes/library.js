@@ -69,10 +69,10 @@ Router.post("/login", async (req, res) => {
         var Password1 = req.body.Password;
         var Role = req.body.Role;
         // Validate Book input
-        if (!(Email && Password1 && Role)) {
+        if (!(Email && Password1)) {
             res.status(400).send("All input is required");
         }
-        mysqlConnection.query(`SELECT Password from user WHERE Email = ${mysqlConnection.escape(Email)} and Role = ${mysqlConnection.escape(Role)}`, (err, result) => {
+        mysqlConnection.query(`SELECT Password from user WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             if (err) {
                 throw err;
             } else if (result.length == 0) {
@@ -112,6 +112,7 @@ Router.post("/insert", async (req, res) => {
         var Shelf_no = req.body.Shelf_no;
         var Row_no = req.body.Row_no;
         var Copies = req.body.Copies;
+        var Author = req.body.Author;
 
         console.log(Name, ISBN, Cat, Edition, Shelf_no, Row_no);
 
@@ -120,33 +121,46 @@ Router.post("/insert", async (req, res) => {
             res.status(400).send("All input is required");
         }
 
-        mysqlConnection.query(`SELECT * from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`, (err, result) => {
+        mysqlConnection.query(`SELECT ISBN from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`, (err, result) => {
             console.log(result);
             if (err) {
                 throw err;
             } else if (result.length >= 1) {
-                var num = `SELECT Count from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`;
-                var ans="UPDATE `LMS`.`Book` SET `Count` = '"+ Copies+num +"' WHERE (`ISBN` = '"+ISBN+"')";
-                mysqlConnection.query(ans, (err, rows, fields) => {
+                mysqlConnection.query(`SELECT Count from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`, (err, result_c) => {
                     if (err) {
-                        //res.send(rows);
-                        console.log(err);
-                    }
-                    else
-                    {
-                        console.log("count is updated");
-                    }
-
-            })}
-            else {
-                var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`) VALUES ('" + Name+ "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "')";
-                mysqlConnection.query(sql, (err, rows, fields) => {
-                    if (err) {
-                        //res.send(rows);
-                        console.log(err);
+                        res.status(400).send(err);
                     }
                     else {
-                        
+                        console.log(parseInt(result_c[0].Count) + parseInt(Copies));
+                        // console.log(typeof(result_c[0].Count));
+                        // console.log(typeof(Copies));
+                        var ans = "UPDATE `LMS`.`Book` SET `Count` = '" + Copies + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
+                        mysqlConnection.query(ans, (err, rows, fields) => {
+                            if (err) {
+                                res.status(400).send(err);
+                                //console.log(err);
+                            }
+                            else
+                            {
+                                res.status(200).send("count is updated");
+                                console.log("count is updated");
+                            }
+                    })
+
+                    }
+                })
+                // console.log(num);
+                // 
+            }
+            else {
+                var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`,`Count`) VALUES ('" + Name + "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "','" + Copies+ "');INSERT INTO `LMS`.`Author` (`Name`) VALUES ('"+Author+"')";
+                mysqlConnection.query(sql, (err, rows, fields) => {
+                    if (err) {
+                        res.send(err);
+                        //console.log(err);
+                    }
+                    else {
+                        res.status(200).send("Book is inserted");
                     }
                 })
             }
@@ -159,5 +173,38 @@ Router.post("/insert", async (req, res) => {
 
 })
 
+// Delete the data from existing database Table
+Router.delete("/Del_book", (req, res) => {
+    
+    var num = req.body.ISBN; 
+    console.log(num);
+    
+    var sql = "DELETE FROM Book WHERE ISBN = '" + num + "'";
+    mysqlConnection.query(sql, (err, rows, fields) => {
+        if (!err) {
+            //res.send(rows);
+            res.send("deletion success");
+            console.log('deletion success');
+        }
+        else {
+            console.log(err);
+        }
+    })
 
+})
+//show the details of book
+Router.get("/show", (req, res) => {
+    var num = req.body.ISBN; 
+    mysqlConnection.query("SELECT * from Book WHERE ISBN = '" + num + "'", (err, rows, fields) => {
+        if (!err) {
+            res.send(rows);
+            //console.log(fields);
+        }
+        else {
+            res.send(err);
+            console.log(err);
+        }
+    })
+
+})
 module.exports = Router;
