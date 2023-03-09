@@ -114,10 +114,10 @@ Router.post("/insert", async (req, res) => {
         var Copies = req.body.Copies;
         var Author = req.body.Author;
 
-        console.log(Name, ISBN, Cat, Edition, Shelf_no, Row_no);
+        console.log(Name, ISBN, Cat, Edition, Shelf_no, Row_no,Author);
 
         // Validate  input
-        if (!(Name && ISBN && Cat && Edition && Shelf_no && Row_no)) {
+        if (!(Name && ISBN && Cat && Edition && Shelf_no && Row_no && Author)) {
             res.status(400).send("All input is required");
         }
 
@@ -134,18 +134,17 @@ Router.post("/insert", async (req, res) => {
                         console.log(parseInt(result_c[0].Count) + parseInt(Copies));
                         // console.log(typeof(result_c[0].Count));
                         // console.log(typeof(Copies));
-                        var ans = "UPDATE `LMS`.`Book` SET `Count` = '"+Copies+"' + '" + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
+                        var ans = "UPDATE `LMS`.`Book` SET `Count` = '" + Copies + "' + '" + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
                         mysqlConnection.query(ans, (err, rows, fields) => {
                             if (err) {
                                 res.status(400).send(err);
                                 //console.log(err);
                             }
-                            else
-                            {
+                            else {
                                 res.status(200).send("count is updated");
                                 console.log("count is updated");
                             }
-                    })
+                        })
 
                     }
                 })
@@ -153,28 +152,102 @@ Router.post("/insert", async (req, res) => {
                 // 
             }
             else {
-                var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`,`Count`) VALUES ('" + Name + "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "','" + Copies+ "')";
-                mysqlConnection.query(sql, (err, rows, fields) => {
+                //insert the book into table with checking wheather the place is filled or not.
+                mysqlConnection.query("SELECT ISBN from Book where Shelf_no = '" + Shelf_no + "' and Row_no='" + Row_no + "' ", (err, result_shelf) => {
                     if (err) {
-                        res.send(err);
-                        //console.log(err);
+                        res.status(400).send(err);
                     }
                     else {
-                        res.status(200).send("Book is inserted");
+                        console.log(result_shelf.length);
+                        if (result_shelf.length > 1) {
+                            res.status(400).send("this is place is already occupied");
+                        }
+                        else {
+                            var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`,`Count`) VALUES ('" + Name + "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "','" + Copies + "')";
+                            mysqlConnection.query(sql, (err) => {
+                                if (err) {
+                                    res.send(err);
+                                    //console.log(err);
+                                }
+                                else {
+                                    //res.status(200).send("Book is inserted");
+                                    console.log("book is inserted");
+                                }
+                            })
+                        }
+                    }
+
+                })
+
+                //check this author is present in table or not . if present then pick their id and put in book-author table
+                mysqlConnection.query("SELECT * from Author WHERE Name = '" + Author + "'", (err, result_author) => {
+                    if (err) {
+                        res.status(400).send(err);
+                    }
+                    else {
+                        if (result_author.length > 0) // auhtor is already present in author table
+                        {
+                            mysqlConnection.query("SELECT Id from Book WHERE ISBN = '" + ISBN + "'", (err, result_bookid) => {
+                                if (err) {
+                                    res.status(400).send(err);
+                                }
+                                else {
+                                    mysqlConnection.query("INSERT INTO `LMS`.`Book_author` (`Book_id`,`Author_id`) VALUES('" + result_bookid[0].Id + "','" + result_author[0].Id + "')", (err) => {
+                                        if (err) {
+                                            res.status(400).send(err)
+                                        }
+                                        else {
+                                            res.status(200).send("auhtor_book updated ");
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                        else {
+
+                            // insert the author name into author table;
+                            mysqlConnection.query("INSERT INTO `LMS`.`Author` (`Name`) VALUES('" + Author + "')", (err) => {
+                                if (err) {
+                                    res.status(200).send(err);
+                                }
+                                else {
+                                    console.log("author name is add in book");
+                                }
+                                // retrive the auhtor id from table 
+                                var auth_id;
+                                mysqlConnection.query("SELECT Id from Author WHERE Name = '" + Author + "'", (err, result_auth) => {
+                                    if (err) {
+                                        res.status.send(err);
+                                    }
+                                    else {
+                                        console.log(result_auth[0].Id);
+                                        auth_id = result_auth[0].Id;
+                                    }
+                                })
+
+                                //get the book id and insert both book id and author id in book author table;
+                                mysqlConnection.query("SELECT Id from Book WHERE ISBN = '" + ISBN + "'", (err, result_bookid) => {
+                                    if (err) {
+                                        res.status(400).send(err);
+                                    }
+                                    else {
+                                        console.log(auth, result_bookid[0].id);
+                                        mysqlConnection.query("INSERT INTO `LMS`.`Book_author` (`Book_id`,`Author_id`) VALUES('" + result_bookid[0].Id + "','" + auth_id + "')", (err) => {
+                                            if (err) {
+                                                res.status(400).send(err)
+                                            }
+                                            else {
+                                                res.status(200).send("auhtor_book updated ");
+                                            }
+                                        })
+                                    }
+                                })
+                            })
+
+                        }
+
                     }
                 })
-                //check this author is present in table or not . if present then pick their id and put in book-author table
-                // mysqlConnection.query("SELECT * from Author WHERE Name = '" + Author + "'",(err,result_author)=>{
-                //     if(err)
-                //     {
-                //         res.status(400).send(err);
-                //     }
-                //     else
-                //     {
-                //         if(result_author.length>0)
-
-                //     }
-                // })
             }
         })
 
@@ -187,16 +260,34 @@ Router.post("/insert", async (req, res) => {
 
 // Delete the data from existing database Table
 Router.delete("/Del_book", (req, res) => {
-    
-    var num = req.body.ISBN; 
+
+    var num = req.body.ISBN;
     console.log(num);
-    
+
+
+    mysqlConnection.query("SELECT Id FROM Book WHERE ISBN = '" + num + "'", (err, result) => {
+        if (err) {
+            res.status(400).send(err);
+        }
+        else {
+            console.log(result[0].Id)
+            mysqlConnection.query("DELETE FROM Book_author WHERE Book_id = '" + result[0].Id + "'", (err) => {
+                if (err) {
+                    res.status(400).send(err);
+                }
+                else {
+                    res.status(200).send("deletion success");
+                }
+            })
+        }
+    })
+
     var sql = "DELETE FROM Book WHERE ISBN = '" + num + "'";
     mysqlConnection.query(sql, (err, rows, fields) => {
         if (!err) {
             //res.send(rows);
-            res.send("deletion success");
-            console.log('deletion success');
+            //res.send("deletion success from ");
+            console.log('deletion success from book table');
         }
         else {
             console.log(err);
@@ -206,7 +297,7 @@ Router.delete("/Del_book", (req, res) => {
 })
 //show the details of book
 Router.get("/show", (req, res) => {
-    var num = req.body.ISBN; 
+    var num = req.body.ISBN;
     mysqlConnection.query("SELECT * from Book WHERE ISBN = '" + num + "'", (err, rows, fields) => {
         if (!err) {
             res.send(rows);
@@ -222,48 +313,59 @@ Router.get("/show", (req, res) => {
 
 // apis for member who has two only borrow and return the book.
 
-Router.post("/borrow", (req, res) => {
-    var ISBN = req.body.ISBN;
-    var Date = req.body.Date; 
-    console.log(ISBN,Date);
-    mysqlConnection.query("SELECT * from Book WHERE ISBN = '" + ISBN + "'", (err,result) => {
-        if (!err) {
-            console.log(result[0]);
-            if(result[0].Count>0)
-            {
-                // get the user id by decoding the token 
-                // const token = req.headers["x-access-token"];
-                // const decoded = jwt.verify(token, process.env.TOKEN_KEY);
-                // console.log(decoded.user_id);
-                var decoded="sim@gmail.com";
-                var id;
-                mysqlConnection.query("SELECT Id from User WHERE Email = '" + decoded + "'",(err,result_m)=>{
-                    if(err)
-                    {
-                        res.status(400).send(err);
-                    }
-                    else
-                    {
-                        console.log(result_m[0].Id,result[0].Id);
-                        id = result_m[0].Id;
-                        var sql ="INSERT INTO `LMS`.`Transaction` (`Book_id` ,`User_id`,`Borrow_date`,`Status`) VALUES ('"+result[0].Id+"','"+result_m[0].Id+"','"+ Date+"','active')"
-
-                    }
-
-                })
-
-                //insert the data into transaction table 
-            }
-            else
-            {
-                res.status(200).send("book is not available right now")
-            }
+Router.post("/transaction", (req, res) => {
+    var book_id = req.body.Book_id;
+    var user_id = req.body.User_id;
+    var transaction_type = req.body.Transaction_type;
+    const transaction_on = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    var count;
+    mysqlConnection.query("SELECT Count from Book WHERE Id = '" + book_id + "'", (err, result) => {
+        if (err) {
+            res.status(400).send(err);
         }
         else {
-            res.send(err);
-            console.log(err);
+
+            count = result[0].Count;
+            console.log(count);
         }
     })
+    let sql;
+    if (transaction_type === 'borrow') {
+        sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
+        mysqlConnection.query(sql, (err) => {
+            if (err) {
+                res.status(400).send(err);
+            } else {
+                mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + -1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+                    if (err) {
+                        res.status(400).send(err);
+                    }
+                    else {
+                        res.send(`Book ${transaction_type}ed successfully`);
+                    }
+                })
+            }
+        });
+    } else if (transaction_type === 'return') {
+        sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
+        mysqlConnection.query(sql, (err) => {
+            if (err) {
+                res.status(400).send(err);
+            } else {
+                mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + +1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+                    if (err) {
+                        res.status(400).send(err);
+                    }
+                    else {
+                        res.send(`Book ${transaction_type}ed successfully`);
+                    }
+                })
+            }
+        });
+    } else {
+        res.status(400).send('Invalid transaction type');
+        return;
+    }
 
 })
 
