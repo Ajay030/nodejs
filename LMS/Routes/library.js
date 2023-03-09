@@ -24,7 +24,7 @@ Router.post("/register", async (req, res) => {
         if (!(Email && Password && F_name && Join_date && Role && L_name)) {
             res.status(400).send("All input is required");
         }
-        mysqlConnection.query(`SELECT * from user WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
+        mysqlConnection.query(`SELECT * from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             console.log(result);
             if (err) {
                 throw err;
@@ -35,7 +35,7 @@ Router.post("/register", async (req, res) => {
 
         encryptedPassword = await bcrypt.hash(Password, 10);
 
-        var sql = "INSERT INTO `LMS`.`user` (`F_name`, `L_name`,`Email`,`Password` ,`Join_date`,`Role`) VALUES ('" + F_name + "','" + L_name + "','" + Email + "','" + encryptedPassword + "','" + Join_date + "','" + Role + "')";
+        var sql = "INSERT INTO `LMS`.`User` (`F_name`, `L_name`,`Email`,`Password` ,`Join_date`,`Role`) VALUES ('" + F_name + "','" + L_name + "','" + Email + "','" + encryptedPassword + "','" + Join_date + "','" + Role + "')";
         mysqlConnection.query(sql, (err, rows, fields) => {
             if (!err) {
                 //res.send(rows);
@@ -72,7 +72,7 @@ Router.post("/login", async (req, res) => {
         if (!(Email && Password1)) {
             res.status(400).send("All input is required");
         }
-        mysqlConnection.query(`SELECT Password from user WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
+        mysqlConnection.query(`SELECT Password from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             if (err) {
                 throw err;
             } else if (result.length == 0) {
@@ -114,7 +114,7 @@ Router.post("/insert", async (req, res) => {
         var Copies = req.body.Copies;
         var Author = req.body.Author;
 
-        console.log(Name, ISBN, Cat, Edition, Shelf_no, Row_no,Author);
+        console.log(Name, ISBN, Cat, Edition, Shelf_no, Row_no, Author);
 
         // Validate  input
         if (!(Name && ISBN && Cat && Edition && Shelf_no && Row_no && Author)) {
@@ -313,9 +313,10 @@ Router.get("/show", (req, res) => {
 
 // apis for member who has two only borrow and return the book.
 
-Router.post("/transaction", (req, res) => {
+Router.post("/transaction", auth, async (req, res) => {
+
     var book_id = req.body.Book_id;
-    var user_id = req.body.User_id;
+
     var transaction_type = req.body.Transaction_type;
     const transaction_on = new Date().toISOString().slice(0, 19).replace('T', ' ');
     var count;
@@ -329,43 +330,63 @@ Router.post("/transaction", (req, res) => {
             console.log(count);
         }
     })
-    let sql;
-    if (transaction_type === 'borrow') {
-        sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
-        mysqlConnection.query(sql, (err) => {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + -1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+    //decode token and get the mail;
+    const token = req.headers["x-access-token"];
+    const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+    console.log("secoded" + decoded.user_id);
+    var user_mail = decoded.user_id;
+
+    //get user_id from the mail
+    var user_id;
+    mysqlConnection.query("SELECT Id from User where Email = '" + user_mail + "'", (err, result) => {
+        if (err) {
+            res.status(400).send(err);
+        }
+
+        else {
+            console.log(result[0].Id);
+            user_id = result[0].Id;
+            let sql;
+            console.log("decoded " + user_id);
+            if (transaction_type === 'borrow') {
+                sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
+                mysqlConnection.query(sql, (err) => {
                     if (err) {
                         res.status(400).send(err);
+                    } else {
+                        mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + -1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+                            if (err) {
+                                res.status(400).send(err);
+                            }
+                            else {
+                                res.send(`Book ${transaction_type}ed successfully`);
+                            }
+                        })
                     }
-                    else {
-                        res.send(`Book ${transaction_type}ed successfully`);
-                    }
-                })
-            }
-        });
-    } else if (transaction_type === 'return') {
-        sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
-        mysqlConnection.query(sql, (err) => {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + +1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+                });
+            } else if (transaction_type === 'return') {
+                sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
+                mysqlConnection.query(sql, (err) => {
                     if (err) {
                         res.status(400).send(err);
+                    } else {
+                        mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + +1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
+                            if (err) {
+                                res.status(400).send(err);
+                            }
+                            else {
+                                res.send(`Book ${transaction_type}ed successfully`);
+                            }
+                        })
                     }
-                    else {
-                        res.send(`Book ${transaction_type}ed successfully`);
-                    }
-                })
+                });
+            } else {
+                res.status(400).send('Invalid transaction type');
+                return;
             }
-        });
-    } else {
-        res.status(400).send('Invalid transaction type');
-        return;
-    }
+        }
+    })
+
 
 })
 
