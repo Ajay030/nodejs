@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Borrow a Book</title>
+	<link rel="stylesheet" type="text/css" href="detail.css">
+</head>
+<body>
+    <nav>
+		<ul>
+
+			<li class="right-side">
+				<button>Add Book</button>
+				<button>Remove Book</button>
+			</li>
+		</ul>
+	</nav>
+      
+	<h1>Books</h1>
+	<table id="book-table">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Category</th>
+				<th>Copies</th>
+				<th>Action</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>001</td>
+				<td>Harry Potter and the Philosopher's Stone</td>
+				<td>Fiction</td>
+				<td>5</td>
+				<td>
+					<button onclick="borrowBook(this)">Borrow</button>
+					<button onclick="returnBook(this)" disabled>Return</button>
+				</td>
+			</tr>
+			<tr>
+				<td>002</td>
+				<td>The Catcher in the Rye</td>
+				<td>Fiction</td>
+				<td>2</td>
+				<td>
+					<button onclick="borrowBook(this)">Borrow</button>
+					<button onclick="returnBook(this)" disabled>Return</button>
+				</td>
+			</tr>
+			<tr>
+				<td>003</td>
+				<td>The Origin of Species</td>
+				<td>Science</td>
+				<td>1</td>
+				<td>
+					<button onclick="borrowBook(this)">Borrow</button>
+					<button onclick="returnBook(this)" disabled>Return</button>
+				</td>
+			</tr>
+			<tr>
+				<td>004</td>
+				<td>A Brief History of Time</td>
+				<td>Science</td>
+				<td>3</td>
+				<td>
+					<button onclick="borrowBook(this)">Borrow</button>
+					<button onclick="returnBook(this)" disabled>Return</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<script src="script.js"></script>
+</body>
+</html>
