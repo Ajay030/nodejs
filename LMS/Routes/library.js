@@ -103,7 +103,7 @@ Router.post("/login", async (req, res) => {
 
 //Insert the data into existing database
 
-Router.post("/insert", async (req, res) => {
+Router.post("/insert",auth_role, async (req, res) => {
     // Our book inserion logic starts here
     try {
         // Get user input
