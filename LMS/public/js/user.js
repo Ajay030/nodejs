@@ -18,6 +18,8 @@ xhr.onload = function () {
 			isbn.textContent = data[i].ISBN;
 			copies.textContent = data[i].Count;
 			Category.textContent = data[i].Category;
+			action.innerHTML = `<button id="borBut-${data[i].Id}" onClick="borBook('${data[i].Id}')">Borrow</button>
+			<button id="retBut-${data[i].Id}" onClick="retBook('${data[i].Id}')">Return</button>`;
 
 			row.appendChild(name);
 			row.appendChild(id);
@@ -34,3 +36,49 @@ xhr.onload = function () {
 };
 xhr.send();
 
+
+const borBook = (bookID) => {
+	const xhr2 = new XMLHttpRequest();
+	const url = 'http://localhost:5500/library/transaction';
+	xhr2.open('POST', url, true);
+	// Set the request header
+	xhr2.setRequestHeader('Content-Type', 'application/json');
+	xhr2.onreadystatechange = function () {
+		if (xhr2.status === 200) {
+			console.log("Transaction Succesfull");
+			document.getElementById(`borBut-${bookID}`).remove();
+		} else {
+			console.log("Transaction Failed")
+		}
+	}
+	const cooken = document.cookie.split('=');
+	const formData = {
+		"TOKEN": cooken[1],
+		"Book_id": bookID,
+		"Transaction_type": "borrow"
+	}
+	xhr2.send(JSON.stringify(formData));
+}
+
+const retBook = (bookID) => {
+	const xhr2 = new XMLHttpRequest();
+	const url = 'http://localhost:5500/library/transaction';
+	xhr2.open('POST', url, true);
+	// Set the request header
+	xhr2.setRequestHeader('Content-Type', 'application/json');
+	xhr2.onreadystatechange = function () {
+		if (xhr2.status === 200) {
+			console.log("Transaction Successful");
+			document.getElementById(`retBut-${bookID}`).remove();
+		} else {
+			console.log("Transaction Failed")
+		}
+	}
+	const cooken = document.cookie.split('=');
+	const formData = {
+		"TOKEN": cooken[1],
+		"Book_id": bookID,
+		"Transaction_type": "return"
+	}
+	xhr2.send(JSON.stringify(formData));
+}
