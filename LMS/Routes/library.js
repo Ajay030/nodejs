@@ -140,7 +140,7 @@ Router.post("/insert", async (req, res) => {
                             console.log(parseInt(result_c[0].Count) + parseInt(Copies));
                             // console.log(typeof(result_c[0].Count));
                             // console.log(typeof(Copies));
-                            var ans = "UPDATE `LMS`.`Book` SET `Count` = '" + Copies + "' + '" + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
+                            var ans = "UPDATE `LMS`.`Book` SET `Count` = '" + +1 + "' + '" + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
                             mysqlConnection.query(ans, (err, rows, fields) => {
                                 if (err) {
                                     res.status(400).send(err);
@@ -161,12 +161,12 @@ Router.post("/insert", async (req, res) => {
                     //insert the book into table with checking wheather the place is filled or not.
                     mysqlConnection.query("SELECT ISBN from Book where Shelf_no = '" + Shelf_no + "' and Row_no='" + Row_no + "' ", (err, result_shelf) => {
                         if (err) {
-                            res.status(400).send(err);
+                            res.status(200).send(err);
                         }
                         else {
                             console.log(result_shelf.length);
-                            if (result_shelf.length > 1) {
-                                res.status(400).send("this is place is already occupied");
+                            if (result_shelf.length > 0) {
+                                res.status(200).send({msg:"this is place is already occupied"});
                             }
                             else {
                                 var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`,`Count`) VALUES ('" + Name + "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "','" + Copies + "')";

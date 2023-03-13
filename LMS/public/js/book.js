@@ -20,7 +20,7 @@ signupForm.addEventListener('submit', function(event) {
         window.location.href = 'http://localhost:5500/detail';
       } else {
         console.log('Error: ' + xhr.status);
-        alert('Signup failed! Please try again.');
+        alert('Register failed! Please try again.');
       }
     }
   };
