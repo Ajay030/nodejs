@@ -11,19 +11,17 @@ signupForm.addEventListener('submit', function(event) {
   xhr.setRequestHeader('Content-Type', 'application/json');
 
   xhr.onreadystatechange = function() {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status === 200) {
         const response = JSON.parse(xhr.responseText);
         console.log(response);
         alert('Signup successful!');
-        signupForm.reset();
+        //signupForm.reset();
+        window.location.href = 'http://localhost:5500/login';
       } else {
         console.log('Error: ' + xhr.status);
         alert('Signup failed! Please try again.');
       }
-    }
   };
-
   const formData = {
     F_name: document.querySelector('#F_name').value,
     L_name: document.querySelector('#L_name').value,

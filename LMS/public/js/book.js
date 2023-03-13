@@ -1,12 +1,40 @@
-function submitForm() {
-	// Get form values
-	let name = document.getElementById("name").value;
-	let isbn = document.getElementById("isbn").value;
-	let category = document.getElementById("category").value;
-	let edition = document.getElementById("edition").value;
-	let shelf = document.getElementById("shelf").value;
-	let row = document.getElementById("row").value;
-	let copies = document.getElementById("copies").value;
+const signupForm = document.querySelector('.signup-box');
+signupForm.addEventListener('submit', function(event) {
+  event.preventDefault();
 
-	// Do something with the form data here (e.g. send to server)
-}
+  const xhr = new XMLHttpRequest();
+  const url = 'http://localhost:5500/library/insert';
+
+  xhr.open('POST', url, true);
+
+  // Set the request header
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status === 200) {
+        const response = JSON.parse(xhr.responseText);
+        console.log(response);
+        alert('Register successful!');
+        //signupForm.reset();
+        window.location.href = 'http://localhost:5500/detail';
+      } else {
+        console.log('Error: ' + xhr.status);
+        alert('Signup failed! Please try again.');
+      }
+    }
+  };
+  const formData = {
+    Name: document.querySelector('#name').value,
+    ISBN: document.querySelector('#isbn').value,
+    Cat: document.querySelector('#category').value,
+    Edition: document.querySelector('#edition').value,
+    Shelf_no: document.querySelector('#shelf').value,
+	  Row_no: document.querySelector('#row').value,
+	  Copies: document.querySelector('#copies').value,
+	  Author: document.querySelector('#author').value
+  };
+  console.log(formData)
+  // Send the request with the JSON-encoded form data
+  xhr.send(JSON.stringify(formData));
+});
