@@ -25,9 +25,10 @@ Router.post("/register", async (req, res) => {
         }
         mysqlConnection.query(`SELECT * from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             if (err) {
-                throw err;
+                console.log(err);
             } else if (result.length >= 1) {
-                res.status(400).send("User Already Exists")
+                res.status(200).send("User Already Exists")
+                res.end();
             }
         })
 
@@ -71,7 +72,6 @@ Router.post("/login", async (req, res) => {
             res.status(400).send("All input is required");
         }
         mysqlConnection.query(`SELECT * from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
-            console.log("hi" + result);
             if (err) {
                 throw err;
             } else if (result.length == 0) {
@@ -313,7 +313,7 @@ Router.delete("/Del_book",auth_role, (req, res) => {
 })
 //show the details of book
 Router.get("/show", (req, res) => {
-    var num = req.body.ISBN;
+   // var num = req.body.ISBN;
     mysqlConnection.query("SELECT * from Book ", (err, rows, fields) => {
         if (!err) {
             res.send(rows);
@@ -326,6 +326,34 @@ Router.get("/show", (req, res) => {
     })
 
 })
+
+//Endpoint for retrieving the books already borrowed
+Router.post("/user-data",auth ,(req, res) => {
+     // decode token and get the mail;
+     const token = req.body.TOKEN;
+     const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+     var user_mail = decoded.user_id;
+     mysqlConnection.query("SELECT Id from User where Email = '" + user_mail + "'", (err, result) => {
+        if (err) {
+            res.status(400).send(err);
+        } else {
+            user_id = result[0].Id;
+            mysqlConnection.query("SELECT * from Transaction WHERE User_id = '"+ user_id +"'", (err, rows, fields) => {
+                if (!err) {
+                    res.send(rows);
+                }
+                else {
+                    res.send(err);
+                    console.log(err);
+                }
+            })
+            
+        }
+
+     })
+
+ })
+ 
 
 // apis for member who has two only borrow and return the book.
 

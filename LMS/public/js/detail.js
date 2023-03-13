@@ -4,31 +4,45 @@ xhr.onload = function () {
 	if (xhr.status === 200) {
 		var data = JSON.parse(xhr.responseText);
 		var bookDetails = document.getElementById('book-details');
-		for (var i = 0; i < data.length; i++) {
-			var row = document.createElement('tr');
-			var name = document.createElement('td');
-			var id = document.createElement('td');
-			var isbn = document.createElement('td');
-			var copies = document.createElement('td');
-			var Category = document.createElement('td');
-			var action = document.createElement('td');
+		const cooken = document.cookie.split('=');
+		const formData = {
+			"TOKEN": cooken[1]
+		};
+		xhr.open('POST','http://localhost:5500/library/user-data');
+		xhr.setRequestHeader('Content-Type', 'application/json');
+		xhr.onload=()=>{
+			const data_borrowed = xhr.responseText;
+			console.log(data_borrowed)
+			
+			for (var i = 0; i < data.length; i++) {
 
-			name.textContent = data[i].Id;
-			id.textContent = data[i].Name;
-			isbn.textContent = data[i].ISBN;
-			copies.textContent = data[i].Count;
-			Category.textContent = data[i].Category;
-			action.innerHTML = `<button id="borBut-${data[i].Id}" onClick="borBook('${data[i].Id}')">Borrow</button>
-			<button id="retBut-${data[i].Id}" onClick="retBook('${data[i].Id}')">Return</button>`;
-
-			row.appendChild(name);
-			row.appendChild(id);
-			row.appendChild(isbn);
-			row.appendChild(copies);
-			row.appendChild(Category);
-			row.appendChild(action);
-			bookDetails.appendChild(row);
+				
+				var row = document.createElement('tr');
+				var name = document.createElement('td');
+				var id = document.createElement('td');
+				var isbn = document.createElement('td');
+				var copies = document.createElement('td');
+				var Category = document.createElement('td');
+				var action = document.createElement('td');
+	
+				name.textContent = data[i].Id;
+				id.textContent = data[i].Name;
+				isbn.textContent = data[i].ISBN;
+				copies.textContent = data[i].Count;
+				Category.textContent = data[i].Category;
+				action.innerHTML = (data_borrowed.indexOf(data[i].Id) === -1? `<button id="borBut-${data[i].Id}" onClick="borBook('${data[i].Id}')">Borrow</button>`
+				:`<button id="retBut-${data[i].Id}" onClick="retBook('${data[i].Id}')">Return</button>`)
+	
+				row.appendChild(name);
+				row.appendChild(id);
+				row.appendChild(isbn);
+				row.appendChild(copies);
+				row.appendChild(Category);
+				row.appendChild(action);
+				bookDetails.appendChild(row);
+			}
 		}
+		xhr.send(JSON.stringify(formData));
 	}
 	else {
 		console.error('Request failed.  Returned status of ' + xhr.status);

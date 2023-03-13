@@ -4,8 +4,11 @@ const mysqlConnection = require('../database/connection');
 const config = process.env;
 
 const verifyToken = (req, res, next) => {
-  const token = req.body.TOKEN || req.query.token || req.headers["x-access-token"];
-
+  var token = req.body.TOKEN || req.query.token || req.headers["cookie"];
+  console.log(req.headers);
+ // token.replace("TOKEN=","");
+ token = token.substring(6);
+  console.log(token);
   if (!token) {
     return res.status(403).send("A token is required for authentication");
   }
@@ -28,7 +31,9 @@ const verifyToken = (req, res, next) => {
         }
     });
   } catch (err) {
+    //console.log(err);
     return res.status(401).send("Invalid Token");
+
   }
   //return next();
 };
