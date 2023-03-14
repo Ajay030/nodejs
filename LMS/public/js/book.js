@@ -15,9 +15,16 @@ signupForm.addEventListener('submit', function(event) {
       if (xhr.status === 200) {
         const response = JSON.parse(xhr.responseText);
         console.log(response);
+        if(response.result)
+        {
         alert('Register successful!');
         //signupForm.reset();
         window.location.href = 'http://localhost:5500/detail';
+        }
+        else
+        {
+          console.log(result.msg);
+        }
       } else {
         console.log('Error: ' + xhr.status);
         alert('Register failed! Please try again.');

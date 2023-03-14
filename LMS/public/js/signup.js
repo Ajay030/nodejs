@@ -14,9 +14,16 @@ signupForm.addEventListener('submit', function(event) {
       if (xhr.status === 200) {
         const response = JSON.parse(xhr.responseText);
         console.log(response);
+        if(response.result)
+        {
         alert('Signup successful!');
         //signupForm.reset();
         window.location.href = 'http://localhost:5500/login';
+        }
+        else
+        {
+          console.log(response.msg);
+        }
       } else {
         console.log('Error: ' + xhr.status);
         alert('Signup failed! Please try again.');

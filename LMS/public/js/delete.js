@@ -12,7 +12,15 @@ signupForm.addEventListener('submit', function(event) {
 
   xhr.onreadystatechange = function() {
       if (xhr.status === 200) {
+        var response =JSON.parse(xhr.responseText);
+        if(response.result)
+        {
         alert('Removal successful!');
+        }
+        else
+        {
+          console.log(response.msg);
+        }
       } else {
         console.log('Error: ' + xhr.responseText);
         alert('Removal failed! Please try again.');

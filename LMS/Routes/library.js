@@ -5,7 +5,7 @@ const mysqlConnection = require('../database/connection');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
-const auth_role = require("../middleware/auth_role.js");
+const auth_role = require("../middleware/auth_role.js").default;
 
 //registeration
 Router.post("/register", async (req, res) => {
@@ -21,13 +21,13 @@ Router.post("/register", async (req, res) => {
 
         // Validate user input
         if (!(Email && Password && F_name && Join_date && L_name)) {
-            res.status(400).send("All input is required");
+            res.status(200).send({"result":false,"msg":"required all inputs"});
         }
         mysqlConnection.query(`SELECT * from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             if (err) {
-                console.log(err);
+                res.status(200).send({"result":false,"msg":err});
             } else if (result.length >= 1) {
-                res.status(400).send({"result":"false","msg":"user already exists"});
+                res.status(200).send({"result":false,"msg":"user already exists"});
                 res.end();
             }
         })
@@ -35,7 +35,7 @@ Router.post("/register", async (req, res) => {
         encryptedPassword = await bcrypt.hash(Password, 10);
 
         var sql = "INSERT INTO `LMS`.`User` (`F_name`, `L_name`,`Email`,`Password` ,`Join_date`) VALUES ('" + F_name + "','" + L_name + "','" + Email + "','" + encryptedPassword + "','" + Join_date + "')";
-        mysqlConnection.query(sql, (err, rows, fields) => {
+        mysqlConnection.query(sql, (err) => {
             if (!err) {
                 //res.send(rows);
                 console.log(' registeration is successful check once');
@@ -47,10 +47,10 @@ Router.post("/register", async (req, res) => {
                         expiresIn: "2h",
                     }
                 );
-                res.status(200).json({"result":"true","msg":TOKEN});
+                res.status(200).json({"result":true,"msg":token});
             }
             else {
-                res.send(err);
+                res.status(200).json({"result":false,"msg":err});
             }
         })
     } catch (err) {
@@ -69,13 +69,13 @@ Router.post("/login", async (req, res) => {
         var Role = req.body.Role;
         // Validate Book input
         if (!(Email && Password1)) {
-            res.statuss(400).send({"result":"false","msg":"all input are required"});
+            res.status(200).send({"result":false,"msg":"all input are required"});
         }
         mysqlConnection.query(`SELECT * from User WHERE Email = ${mysqlConnection.escape(Email)}`, (err, result) => {
             if (err) {
-                res.status(400).send({"result":"false","msg":err});
+                res.status(200).send({"result":false,"msg":err});
             } else if (result.length == 0) {
-                console.log("User does not exists!");
+                res.status(200).send({"result":false,"msg":"User does not exists!"});
                 //res.send.json("User does not exists!")
             } else {
                 const isValidPassword = bcrypt.compareSync(Password1, result[0].Password);
@@ -88,10 +88,11 @@ Router.post("/login", async (req, res) => {
                         }
                     );
                     console.log(result[0].Role);
-                    res.status(200).json({ "TOKEN": token, "ROLE": result[0].Role });
+                    console.log(token);
+                    res.status(200).json({ "result":true,"token": token, "ROLE": result[0].Role });
                 } else {
                     console.log('Invalid Credentails');
-                    res.json({"Result":"false","msg":"Invalid Credentails"})
+                    res.status(200).json({"result":false,"msg":"Invalid Credentails"})
                 }
             }
         })
@@ -120,21 +121,21 @@ Router.post("/insert",auth_role, async (req, res) => {
 
         // Validate  input
         if (!(Name && ISBN && Cat && Edition && Shelf_no && Row_no && Author)) {
-            res.status(400).send({"result":"false","msg":"All input is required"});
+            res.status(200).send({"result":false,"msg":"All input is required"});
         }
 
         mysqlConnection.beginTransaction(function (err) {
-            res.status(400).send({"result":"false","msg":err});
+            res.status(200).send({"result":false,"msg":err});
 
             // check wheather book is present or not if present simple increase the count of
             mysqlConnection.query(`SELECT ISBN from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`, (err, result) => {
                 console.log(result);
                 if (err) {
-                    res.status(400).send({"result":"false","msg":err});
+                    res.status(200).send({"result":false,"msg":err});
                 } else if (result.length >= 1) {
                     mysqlConnection.query(`SELECT Count from Book WHERE ISBN = ${mysqlConnection.escape(ISBN)}`, (err, result_c) => {
                         if (err) {
-                            res.status(400).send({"result":"false","msg":err});
+                            res.status(200).send({"result":false,"msg":err});
                         }
                         else {
                             console.log(parseInt(result_c[0].Count) + parseInt(Copies));
@@ -143,7 +144,7 @@ Router.post("/insert",auth_role, async (req, res) => {
                             var ans = "UPDATE `LMS`.`Book` SET `Count` = '" + +1 + "' + '" + result_c[0].Count + "' WHERE (`ISBN` = '" + ISBN + "')";
                             mysqlConnection.query(ans, (err, rows, fields) => {
                                 if (err) {
-                                    res.status(400).send({"result":"false","msg":err});
+                                    res.status(200).send({"result":false,"msg":err});
                                     //console.log(err);
                                 }
                                 else {
@@ -161,18 +162,18 @@ Router.post("/insert",auth_role, async (req, res) => {
                     //insert the book into table with checking wheather the place is filled or not.
                     mysqlConnection.query("SELECT ISBN from Book where Shelf_no = '" + Shelf_no + "' and Row_no='" + Row_no + "' ", (err, result_shelf) => {
                         if (err) {
-                            res.status(400).send({"result":"false","msg":err});
+                            res.status(200).send({"result":false,"msg":err});
                         }
                         else {
                             console.log(result_shelf.length);
                             if (result_shelf.length > 0) {
-                                res.status(400).send({result:"false",msg:"this is place is already occupied"});
+                                res.status(200).send({result:false,msg:"this is place is already occupied"});
                             }
                             else {
                                 var sql = "INSERT INTO `LMS`.`Book` (`Name`,`ISBN`,`Category` ,`Edition`,`Shelf_no`,`Row_no`,`Count`) VALUES ('" + Name + "','" + ISBN + "','" + Cat + "','" + Edition + "','" + Shelf_no + "','" + Row_no + "','" + Copies + "')";
                                 mysqlConnection.query(sql, (err) => {
                                     if (err) {
-                                        res.status(400).send({"result":"false","msg":err});
+                                        res.status(200).send({"result":false,"msg":err});
                                         //console.log(err);
                                     }
                                     else {
@@ -188,19 +189,19 @@ Router.post("/insert",auth_role, async (req, res) => {
                     //check this author is present in table or not . if present then pick their id and put in book-author table
                     mysqlConnection.query("SELECT * from Author WHERE Name = '" + Author + "'", (err, result_author) => {
                         if (err) {
-                            res.status(400).send({"result":"false","msg":err});
+                            res.status(200).send({"result":false,"msg":err});
                         }
                         else {
                             if (result_author.length > 0) // auhtor is already present in author table
                             {
                                 mysqlConnection.query("SELECT Id from Book WHERE ISBN = '" + ISBN + "'", (err, result_bookid) => {
                                     if (err) {
-                                        res.status(400).send({"result":"false","msg":err});
+                                        res.status(200).send({"result":false,"msg":err});
                                     }
                                     else {
                                         mysqlConnection.query("INSERT INTO `LMS`.`Book_author` (`Book_id`,`Author_id`) VALUES('" + result_bookid[0].Id + "','" + result_author[0].Id + "')", (err) => {
                                             if (err) {
-                                                res.status(400).send({"result":"false","msg":err});
+                                                res.status(200).send({"result":false,"msg":err});
                                             }
                                             else {
                                                 res.status(200).send({"result":"true",msg:"auhtor_book updated","book":{"Book_id":result_bookid[0].Id}});
@@ -214,7 +215,7 @@ Router.post("/insert",auth_role, async (req, res) => {
                                 // insert the author name into author table;
                                 mysqlConnection.query("INSERT INTO `LMS`.`Author` (`Name`) VALUES('" + Author + "')", (err) => {
                                     if (err) {
-                                        res.status(400).send({"result":"false","msg":err});
+                                        res.status(200).send({"result":false,"msg":err});
                                     }
                                     else {
                                         console.log("author name is add in book");
@@ -223,7 +224,7 @@ Router.post("/insert",auth_role, async (req, res) => {
                                     var auth_id;
                                     mysqlConnection.query("SELECT Id from Author WHERE Name = '" + Author + "'", (err, result_auth) => {
                                         if (err) {
-                                            res.status(400).send({"result":"false","msg":err});
+                                            res.status(200).send({"result":false,"msg":err});
                                         }
                                         else {
                                             console.log(result_auth[0].Id);
@@ -234,13 +235,13 @@ Router.post("/insert",auth_role, async (req, res) => {
                                     //get the book id and insert both book id and author id in book author table;
                                     mysqlConnection.query("SELECT Id from Book WHERE ISBN = '" + ISBN + "'", (err, result_bookid) => {
                                         if (err) {
-                                            res.status(400).send({"result":"false","msg":err});
+                                            res.status(200).send({"result":false,"msg":err});
                                         }
                                         else {
                                             console.log(auth, result_bookid[0].id);
                                             mysqlConnection.query("INSERT INTO `LMS`.`Book_author` (`Book_id`,`Author_id`) VALUES('" + result_bookid[0].Id + "','" + auth_id + "')", (err) => {
                                                 if (err) {
-                                                    res.status(400).send({"result":"false","msg":err});
+                                                    res.status(200).send({"result":false,"msg":err});
                                                 }
                                                 else {
                                                     res.status(200).send({"result":"true",msg:"inserted","book":{"Book_id":result_bookid[0].Id}});
@@ -269,10 +270,10 @@ Router.delete("/Del_book",auth_role, (req, res) => {
     var num = req.body.ISBN;
     mysqlConnection.query("SELECT  * FROM Book WHERE ISBN = '" + num + "'", (err, result) => {
         if (err) {
-            res.status(400).send({"result":"false","msg":err});
+            res.status(200).send({"result":false,"msg":err});
         }
         if (result.length == 0) {
-            res.status(400).send({"result":"false","msg":"book is not present"});
+            res.status(200).send({"result":false,"msg":"book is not present"});
         }
         else {
             console.log("id is " + result[0].Id);
@@ -280,26 +281,26 @@ Router.delete("/Del_book",auth_role, (req, res) => {
             if (result[0].Count > 1) {
                 mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + result[0].Count + "'+ '" + -1 + "'  WHERE (`ISBN` = '" + num + "')", (err) => {
                     if (err) {
-                        res.status(400).send({"result":"false","msg":err});
+                        res.status(200).send({"result":false,"msg":err});
                     }
                     else {
-                        res.status(200).send({"result":"true",msg:"deletion success","book":{"isbn":num}});
+                        res.status(200).send({"result":true,msg:"deletion success","book":{"isbn":num}});
                     }
                 })
             }
             else {
                 mysqlConnection.query("DELETE FROM Book WHERE Id = '" + result[0].Id + "'", (err) => {
                     if (err) {
-                        res.status(400).send({"result":"false","msg":err});
+                        res.status(200).send({"result":false,"msg":err});
                     }
                     else {
                         console.log("book delete succesful");
                         mysqlConnection.query("DELETE FROM Book_author WHERE Book_id = '" + result[0].Id + "'", (err) => {
                             if (err) {
-                                    res.status(400).send({"result":"false","msg":err});
+                                    res.status(200).send({"result":false,"msg":err});
                             }
                             else {
-                                res.status(200).send({"result":"true",msg:"deletion success","book":{"book_id":result[0].Id}});
+                                res.status(200).send({"result":true,msg:"deletion success","book":{"book_id":result[0].Id}});
                             }
                         })
                     }
@@ -320,7 +321,7 @@ Router.get("/show", (req, res) => {
             //console.log(fields);
         }
         else {
-            res.status(400).send({"result":"false","msg":err});
+            res.status(200).send({"result":false,"msg":err});
             console.log(err);
         }
     })
@@ -338,7 +339,7 @@ Router.post("/transaction", auth, async (req, res) => {
     var count;
     mysqlConnection.query("SELECT Count from Book WHERE Id = '" + book_id + "'", (err, result) => {
         if (err) {
-                res.status(400).send({"result":"false","msg":err});
+                res.status(200).send({"result":false,"msg":err});
         }
         else {
             count = result[0].Count;
@@ -350,7 +351,7 @@ Router.post("/transaction", auth, async (req, res) => {
     var user_mail = decoded.user_id;
     mysqlConnection.query("SELECT Id from User where Email = '" + user_mail + "'", (err, result) => {
         if (err) {
-                res.status(400).send({"result":"false","msg":err});
+                res.status(200).send({"result":false,"msg":err});
         } else {
             user_id = result[0].Id;
             let sql;
@@ -358,11 +359,11 @@ Router.post("/transaction", auth, async (req, res) => {
                 sql = 'INSERT INTO Transaction (Id_book, User_id, Borrow_date,Status) VALUES ("' + book_id + '", "' + user_id + '", "' + transaction_on + '","' + transaction_type + '")';
                 mysqlConnection.query(sql, (err) => {
                     if (err) {
-                            res.status(400).send({"result":"false","msg":err});
+                            res.status(200).send({"result":false,"msg":err});
                     } else {
                         mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + -1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
                             if (err) {
-                                    res.status(400).send({"result":"false","msg":err});
+                                    res.status(200).send({"result":false,"msg":err});
                             }
                             else {
                                 res.send(`Book ${transaction_type}ed successfully`);
@@ -374,17 +375,17 @@ Router.post("/transaction", auth, async (req, res) => {
                 sql = "SELECT Id from Transaction where Id_book='" + book_id + "'";
                 mysqlConnection.query(sql, (err, result) => {
                     if (err) {
-                            res.status(400).send({"result":"false","msg":err});
+                            res.status(200).send({"result":false,"msg":err});
                     } else {
 
                         mysqlConnection.query("UPDATE `Transaction` SET `Status`='return'", (err) => {
                             if (err) {
-                                    res.status(400).send({"result":"false","msg":err});
+                                    res.status(200).send({"result":false,"msg":err});
                             }
                             else {
                                 mysqlConnection.query("UPDATE `LMS`.`Book` SET `Count` = '" + count + "'+ '" + +1 + "'  WHERE (`Id` = '" + book_id + "')", (err) => {
                                     if (err) {
-                                            res.status(400).send({"result":"false","msg":err});
+                                            res.status(200).send({"result":false,"msg":err});
                                     }
                                     else {
                                         res.send(`Book ${transaction_type}ed successfully`);
@@ -396,7 +397,7 @@ Router.post("/transaction", auth, async (req, res) => {
                     }
                 });
             } else {
-                res.status(400).send({"result":"false","msg":"inavlid transaction type"});
+                res.status(200).send({"result":false,"msg":"inavlid transaction type"});
                 return;
             }
         }
@@ -413,7 +414,7 @@ Router.post("/user-data",auth ,(req, res) => {
     var user_mail = decoded.user_id;
     mysqlConnection.query("SELECT Id from User where Email = '" + user_mail + "'", (err, result) => {
        if (err) {
-               res.status(400).send({"result":"false","msg":err});
+               res.status(400).send({"result":false,"msg":err});
        } else {
            user_id = result[0].Id;
            mysqlConnection.query("SELECT * from Transaction WHERE User_id = '"+ user_id +"'", (err, rows, fields) => {
@@ -421,7 +422,7 @@ Router.post("/user-data",auth ,(req, res) => {
                    res.send(rows);
                }
                else {
-                res.status(400).send({"result":"false","msg":err});
+                res.status(400).send({"result":false,"msg":err});
                 console.log(err);
                }
            })

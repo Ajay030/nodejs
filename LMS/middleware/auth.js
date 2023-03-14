@@ -3,7 +3,8 @@ require("dotenv").config();
 const config = process.env;
 
 const verifyToken = (req, res, next) => {
-  const token = req.body.TOKEN || req.query.token || req.headers["x-access-token"];
+  const token = req.body.TOKEN || req.query.token || req.headers["cookie"];
+  console.log(token);
   if (!token) {
     return res.status(403).send("A token is required for authentication");
   }
